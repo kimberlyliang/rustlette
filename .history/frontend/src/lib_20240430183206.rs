@@ -58,11 +58,3 @@ impl Component for Model {
 pub fn run_app() {
     App::<Model>::new().mount_to_body();
 }
-
-
-#[test]
-fn test_start_game() {
-    let context = get_context(vec![], false);
-    testing_env!(context);
-    // Instantiate and test your contract methods
-}
