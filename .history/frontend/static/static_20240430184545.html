@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Yew NEAR DApp</title>
+    <script type="module">
+        // Import the generated JavaScript glue code
+        import init from './pkg/your_project_name.js';
+        async function run() {
+            // Initialize the wasm module
+            await init('./pkg/your_project_name_bg.wasm');
+        }
+        // Run the application
+        run();
+    </script>
+</head>
+<body>
+    <div id="app">
+        <h1>Loading...</h1>
+    </div>
+</body>
+</html>

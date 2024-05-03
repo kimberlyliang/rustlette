@@ -1,68 +1,86 @@
 use yew::prelude::*;
+use wasm_bindgen::prelude::wasm_bindgen;
+use web_sys::HtmlInputElement;
+use yew::virtual_dom::AttrValue;
 
+#[derive(Debug)]
 enum Msg {
     StartGame,
-    SubmitBid(u128),
+    SubmitBid,
+    UpdateBidAmount(String),
 }
 
-struct Model {
-    link: ComponentLink<Self>,
-    game_started: bool,
-    total_pot: u128,
-}
+#[function_component(Model)]
+fn model() -> Html {
+    let game_started = use_state(|| false);
+    let total_pot = use_state(|| 0);
+    let bid_amount = use_state(|| String::new());
+    let is_bid_valid = use_state(|| true);
 
-impl Component for Model {
-    type Message = Msg;
-    type Properties = ();
+    // Callback to handle starting the game
+    let start_game = {
+        let game_started = game_started.clone();
+        Callback::from(move |_| game_started.set(true))
+    };
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Self {
-            link,
-            game_started: false,
-            total_pot: 0,
-        }
-    }
+    // Callback to handle input changes in the bid amount field
+    let update_bid_amount = {
+        let bid_amount = bid_amount.clone();
+        let is_bid_valid = is_bid_valid.clone();
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        match msg {
-            Msg::StartGame => {
-                // Placeholder: Logic to start the game
-                self.game_started = true;
-                true // Rerender
-            },
-            Msg::SubmitBid(amount) => {
-                // Placeholder: Logic to submit a bid
-                self.total_pot += amount; // This is just a placeholder
-                true
-            }
-        }
-    }
+        Callback::from(move |e: InputEvent| {
+            let input: HtmlInputElement = e.target_unchecked_into();
+            let input_value = input.value();
 
-    fn view(&self) -> Html {
-        html! {
-            <div>
-                <h1>{ "NEAR Roulette Game" }</h1>
-                if !self.game_started {
-                    <button onclick=self.link.callback(|_| Msg::StartGame)>{ "Start Game" }</button>
-                } else {
-                    <input type="number" id="bid_amount" name="bid_amount" />
-                    <button onclick=self.link.callback(|_| Msg::SubmitBid(100))>{ "Submit Bid" }</button>
-                    <p>{ format!("Total Pot: {}", self.total_pot) }</p>
+            // Validate the input as a positive u128 number
+            let is_valid = input_value.parse::<u128>().is_ok() && input_value.parse::<u128>().unwrap() > 0;
+
+            // Update the bid amount and validation state
+            bid_amount.set(input_value);
+            is_bid_valid.set(is_valid);
+        })
+    };
+
+    // Callback to handle form submission
+    let submit_bid = {
+        let bid_amount = bid_amount.clone();
+        let total_pot = total_pot.clone();
+        let is_bid_valid = *is_bid_valid;
+
+        Callback::from(move |_| {
+            if is_bid_valid {
+                if let Ok(amount) = bid_amount.parse::<u128>() {
+                    total_pot.set(*total_pot + amount);
                 }
-            </div>
-        }
+            }
+        })
+    };
+
+    // Render the component
+    html! {
+        <div>
+            <h1>{ "NEAR Roulette Game" }</h1>
+            if !*game_started {
+                <button onclick={start_game}>{ "Start Game" }</button>
+            } else {
+                <div>
+                    <input type="number"
+                           id="bid_amount"
+                           name="bid_amount"
+                           placeholder="Enter your bid"
+                           value={AttrValue::from(bid_amount.to_string())}
+                           oninput={update_bid_amount}
+                           style={if *is_bid_valid { "" } else { "border: 2px solid red;" }}
+                    />
+                    <button onclick={submit_bid} disabled={!*is_bid_valid}>{ "Submit Bid" }</button>
+                    <p>{ format!("Total Pot: {}", *total_pot) }</p>
+                </div>
+            }
+        </div>
     }
 }
 
 #[wasm_bindgen(start)]
 pub fn run_app() {
-    App::<Model>::new().mount_to_body();
-}
-
-
-#[test]
-fn test_start_game() {
-    let context = get_context(vec![], false);
-    testing_env!(context);
-    // Instantiate and test your contract methods
+    yew::start_app::<Model>();
 }
