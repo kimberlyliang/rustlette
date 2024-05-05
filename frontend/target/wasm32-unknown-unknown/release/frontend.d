@@ -1,1 +1,1 @@
-/Users/kimberly/cis1905/rustlette/frontend/target/wasm32-unknown-unknown/release/frontend.wasm: /Users/kimberly/cis1905/rustlette/frontend/src/lib.rs
+C:\Users\seanw\Code\rustlette\frontend\target\wasm32-unknown-unknown\release\frontend.wasm: C:\Users\seanw\Code\rustlette\frontend\src\lib.rs C:\Users\seanw\Code\rustlette\frontend\static\near_integration.js

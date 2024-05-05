@@ -13,6 +13,18 @@ enum Msg {
     UpdateTimer,
 }
 
+#[wasm_bindgen(module = "/static/near_integration.js")]
+extern "C" {
+    async fn initContract();
+    fn signIn();
+}
+
+#[wasm_bindgen(module = "/static/near_integration.js")]
+extern "C" {
+    async fn initContract();
+    fn signIn();
+}
+
 #[function_component(Model)]
 fn model() -> Html {
     // State hooks
@@ -20,6 +32,20 @@ fn model() -> Html {
     let total_pot = use_state(|| 0);
     let bid_amount = use_state(|| String::new());
     let is_bid_valid = use_state(|| true);
+
+    // Initialize NEAR contract on component mount
+    {
+        use_effect_with_deps(|_| {
+            spawn_local(async {
+                initContract().await;
+            });
+            || ()
+        }, ());
+    }
+
+    let sign_in = Callback::from(|_| {
+        signIn();
+    });
     let timer = use_state(|| 0);
     let interval = use_state(|| None as Option<Interval>);
 
@@ -72,15 +98,13 @@ fn model() -> Html {
         let is_bid_valid = is_bid_valid.clone();
 
         Callback::from(move |e: InputEvent| {
-            let input: HtmlInputElement = e.target_unchecked_into();
-            let input_value = input.value();
-
-            // Validate the input as a positive u128 number
-            let is_valid = input_value.parse::<u128>().is_ok() && input_value.parse::<u128>().unwrap() > 0;
-
-            // Update the bid amount and validation state
-            bid_amount.set(input_value);
-            is_bid_valid.set(is_valid);
+            let input: Result<HtmlInputElement, _> = e.target().unwrap().dyn_into();
+            if let Ok(input) = input {
+                let input_value = input.value();
+                let is_valid = input_value.parse::<u128>().is_ok() && input_value.parse::<u128>().unwrap() > 0;
+                bid_amount.set(input_value);
+                is_bid_valid.set(is_valid);
+            }
         })
     };
 
@@ -104,6 +128,7 @@ fn model() -> Html {
     html! {
         <div>
             <h1>{ "NEAR Roulette Game" }</h1>
+            <button onclick={sign_in}>{ "Sign in" }</button>
             if !*game_started {
                 <button onclick={start_game}>{ "Start Game" }</button>
             } else {

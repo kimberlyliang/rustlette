@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Yew NEAR DApp</title>
+    <script type="module" src="/near_integration.js"></script>
+    <script type="module">
+        // Import the generated JavaScript glue code
+        import init from './pkg/frontend.js';
+        async function run() {
+            // Initialize the wasm module
+            await init('./pkg/frontend_bg.wasm');
+        }
+        // Run the application
+        run();
+    </script>
+</head>
+<body>
+    <div id="app">
+        <h1>Loading...</h1>
+    </div>
+</body>
+</html>
