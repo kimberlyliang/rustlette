@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Yew NEAR DApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/near-api-js@latest/dist/near-api-js.min.js"></script>
+    <script type="module" src="/near_integration.js"></script>
+    <script type="module">
+        import init from './pkg/frontend.js';
+        import { initContract } from '/near_integration.js';
+        async function run() {
+            // Initialize the wasm module
+            await init('./pkg/frontend_bg.wasm');
+            await initContract();
+        }
+        // Run the application
+        run();
+    </script>
+</head>
+<body>
+    <div id="app">
+        <h1>Loading...</h1>
+    </div>
+</body>
+</html>
