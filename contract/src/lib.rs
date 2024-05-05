@@ -90,3 +90,70 @@ impl Roulette {
         self.total_pot.into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::test_utils::{accounts, VMContextBuilder};
+    use near_sdk::{testing_env, MockedBlockchain};
+    use near_sdk::json_types::{U128, U64};
+
+    // Helper function to set up the environment and return the contract
+    fn setup_contract() -> Roulette {
+        let mut context = VMContextBuilder::new();
+        context.current_account_id(accounts(0))
+            .signer_account_id(accounts(1))
+            .account_balance(10u128.pow(26)); // 100 NEAR
+        testing_env!(context.build());
+
+        Roulette::new(U64(300), U128(1_000_000_000), 5) // game_length: 300 seconds, max_bet: 1 NEAR, house_fee: 5%
+    }
+
+    #[test]
+    fn test_initialization() {
+        let contract = setup_contract();
+        assert_eq!(contract.owner, accounts(1));
+        assert_eq!(contract.parameters.max_bet.0, 1_000_000_000);
+        assert_eq!(contract.parameters.house_fee, 5);
+        assert!(!contract.game_started);
+    }
+
+    #[test]
+    #[should_panic(expected = "The game has already started")]
+    fn test_start_game_twice() {
+        let mut contract = setup_contract();
+        contract.start_game();
+        contract.start_game(); // This should panic
+    }
+
+    #[test]
+    fn test_game_flow() {
+        let mut contract = setup_contract();
+        contract.start_game();
+        assert!(contract.game_started);
+
+        // Player places a bid
+        testing_env!(VMContextBuilder::new()
+            .signer_account_id(accounts(2))
+            .predecessor_account_id(accounts(2))
+            .build());
+        contract.submit_bid(U128(500_000_000)); // 0.5 NEAR
+
+        // End the game
+        testing_env!(VMContextBuilder::new()
+            .block_timestamp(contract.end_time + 1_000_000_000) // Fast forward time past end_time
+            .build());
+        contract.end_game();
+
+        assert!(!contract.game_started);
+        assert_eq!(contract.total_pot, 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "The bid amount is out of allowed range")]
+    fn test_bid_too_high() {
+        let mut contract = setup_contract();
+        contract.start_game();
+        contract.submit_bid(U128(2_000_000_000)); // 2 NEAR, should panic because max_bet is 1 NEAR
+    }
+}
