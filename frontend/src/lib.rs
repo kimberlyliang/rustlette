@@ -31,15 +31,6 @@ impl fmt::Display for AppError {
 
 impl std::error::Error for AppError {}
 
-// Message enum for the Model component
-enum Msg {
-    StartGame,
-    EndGame,
-    SubmitBid,
-    UpdateBidAmount(String),
-    HandleError(AppError),
-}
-
 #[wasm_bindgen(module = "/static/near_integration.js")]
 extern "C" {
     #[wasm_bindgen(catch)]
@@ -52,7 +43,7 @@ extern "C" {
 
 #[function_component(Model)]
 fn model() -> Html {
-    // State handles
+    // state handles
     let game_started = use_state(|| false);
     let total_pot = use_state(|| 0);
     let bid_amount = use_state(|| String::new());
@@ -61,7 +52,7 @@ fn model() -> Html {
     let interval = use_state(|| None as Option<Rc<RefCell<Interval>>>);
     let error = use_state(|| None::<AppError>);
 
-    // Initialize NEAR contract on component mount
+    // initialize NEAR contract on component mount
     {
         let error_clone = error.clone();
         use_effect_with_deps(move |_| {
@@ -70,7 +61,7 @@ fn model() -> Html {
                     Ok(_) => {},
                     Err(e) => {
                         let app_error = AppError::NetworkError(
-                            e.as_string().unwrap_or_else(|| "Failed to initialize contract".into())
+                            e.as_string().unwrap_or_else(|| "Issue connecting with contract".into())
                         );
                         error_clone.set(Some(app_error));
                     }
@@ -80,7 +71,7 @@ fn model() -> Html {
         }, ());
     }
 
-    // Sign-in callback
+    // sign-in callback
     let sign_in = Callback::from({
         let error_clone = error.clone();
         move |_| {
@@ -96,7 +87,7 @@ fn model() -> Html {
         }
     });
 
-    // Start game
+    // start game
     let start_game = Callback::from({
         let game_started = game_started.clone();
         let timer = timer.clone();
@@ -107,7 +98,7 @@ fn model() -> Html {
             game_started.set(true);
             timer.set(0);
 
-            // Create a new interval
+            // Create new interval
             let new_interval = Interval::new(1000, {
                 let timer_clone = timer.clone();
                 move || {
@@ -149,7 +140,7 @@ fn model() -> Html {
         }
     });
 
-    // Update bid amount 
+    // Update bid
     let update_bid_amount = Callback::from({
         let bid_amount = bid_amount.clone();
         let is_bid_valid = is_bid_valid.clone();
@@ -182,7 +173,7 @@ fn model() -> Html {
         }
     });
 
-    // Submit bid callback
+    // Submit bid
     let submit_bid = Callback::from({
         let bid_amount = bid_amount.clone();
         let total_pot = total_pot.clone();
@@ -192,7 +183,10 @@ fn model() -> Html {
         move |_| {
             if is_bid_valid {
                 match bid_amount.parse::<u128>() {
-                    Ok(amount) => total_pot.set(*total_pot + amount),
+                    Ok(amount) => {
+                        total_pot.set(*total_pot + amount); 
+                        bid_amount.set(String::new());
+                    }
                     Err(_) => {
                         let app_error = AppError::BidError(
                             "Failed to parse bid amount for submission.".into()
@@ -239,7 +233,7 @@ fn model() -> Html {
                     />
                     <button onclick={submit_bid} disabled={!*is_bid_valid} style="background-color: #007BFF; color: white; border: none; border-radius: 4px; padding: 10px 15px; cursor: pointer; transition: background-color 0.3s;">{ "Submit Bid" }</button>
                     <p style="font-weight: bold; margin-bottom: 5px;">{ format!("Total Pot: {}", *total_pot) }</p>
-                    <p style="font-weight: bold; margin-bottom: 10px;">{ format!("Time: {} seconds", *timer) }</p>
+                    <p style="font-weight: bold; margin-bottom: 10px;">{ format!("Round: {}", *timer) }</p>
                     <button onclick={end_game} style="background-color: #007BFF; color: white; border: none; border-radius: 4px; padding: 10px 15px
                     ; cursor: pointer; transition: background-color 0.3s;">{ "End Game" }</button>
                     </div>
